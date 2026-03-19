@@ -1,7 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
-import { supabase, getCurrentUser } from '../services/supabase';
+import { supabase, getCurrentUser, getProfile, upsertProfile } from '../services/supabase';
 import { useWatchlist } from '../hooks/useWatchlist';
+
+const PREFS_KEY = 'swipemart_prefs';
 
 const AppContext = createContext(null);
 
@@ -15,6 +18,55 @@ export function AppProvider({ children }) {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+
+  // ── Preferences ─────────────────────────────────
+  const [showActionButtons, setShowActionButtons] = useState(true);
+
+  // Load preferences when user is known
+  useEffect(() => {
+    async function loadPrefs() {
+      try {
+        if (user) {
+          const { data } = await getProfile(user.id);
+          if (data?.preferences) {
+            const prefs = data.preferences;
+            if (typeof prefs.showActionButtons === 'boolean') {
+              setShowActionButtons(prefs.showActionButtons);
+            }
+          }
+        } else {
+          const raw = await AsyncStorage.getItem(PREFS_KEY);
+          if (raw) {
+            const prefs = JSON.parse(raw);
+            if (typeof prefs.showActionButtons === 'boolean') {
+              setShowActionButtons(prefs.showActionButtons);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[Prefs] load error', e);
+      }
+    }
+    loadPrefs();
+  }, [user]);
+
+  const saveShowActionButtons = useCallback(async (val) => {
+    setShowActionButtons(val);
+    try {
+      if (user) {
+        // Merge with any existing preferences
+        const { data: existing } = await getProfile(user.id);
+        const merged = { ...(existing?.preferences ?? {}), showActionButtons: val };
+        await upsertProfile(user.id, { preferences: merged });
+      } else {
+        const raw = await AsyncStorage.getItem(PREFS_KEY);
+        const current = raw ? JSON.parse(raw) : {};
+        await AsyncStorage.setItem(PREFS_KEY, JSON.stringify({ ...current, showActionButtons: val }));
+      }
+    } catch (e) {
+      console.warn('[Prefs] save error', e);
+    }
+  }, [user]);
 
   // ── Watchlist (shared across all tabs) ────────
   const watchlistHook = useWatchlist(user);
@@ -70,6 +122,10 @@ export function AppProvider({ children }) {
     setSearchQuery,
     selectedCategory,
     setSelectedCategory,
+
+    // Preferences
+    showActionButtons,
+    saveShowActionButtons,
 
     // Watchlist
     watchlist: watchlistHook.watchlist,

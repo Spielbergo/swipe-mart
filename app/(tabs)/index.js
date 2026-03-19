@@ -19,7 +19,7 @@ import Colors from '../../constants/colors';
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function DiscoverScreen() {
-  const { user, location, requestLocation, searchQuery, setSearchQuery, selectedCategory, setSelectedCategory, addItem } = useApp();
+  const { user, location, requestLocation, searchQuery, setSearchQuery, selectedCategory, setSelectedCategory, addItem, showActionButtons } = useApp();
   const [searchVisible, setSearchVisible] = useState(false);
   const [savedCount, setSavedCount] = useState(0);
   const [skipCount, setSkipCount] = useState(0);
@@ -178,7 +178,7 @@ export default function DiscoverScreen() {
       </View>
 
       {/* Bottom action buttons */}
-      {products.length > 0 && !loading && (
+      {showActionButtons && products.length > 0 && !loading && (
         <View style={styles.actionRow}>
           <TouchableOpacity
             style={[styles.actionBtn, styles.actionBtnSkip]}

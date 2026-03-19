@@ -15,7 +15,7 @@ import { signOut } from '../../services/supabase';
 import Colors from '../../constants/colors';
 
 export default function ProfileScreen() {
-  const { user, location, requestLocation, locationError, watchlist } = useApp();
+  const { user, location, requestLocation, locationError, watchlist, showActionButtons, saveShowActionButtons } = useApp();
   const [signingOut, setSigningOut] = useState(false);
   const [locationEnabled, setLocationEnabled] = useState(!!location);
 
@@ -79,6 +79,19 @@ export default function ProfileScreen() {
             <Switch
               value={locationEnabled}
               onValueChange={handleLocationToggle}
+              trackColor={{ false: Colors.border, true: Colors.primary }}
+              thumbColor={Colors.card}
+            />
+          </View>
+
+          <View style={[styles.settingRow, styles.settingRowBorder]}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingLabel}>Show action buttons</Text>
+              <Text style={styles.settingHint}>Display ✕ / ↩ / ♥ buttons below the card deck</Text>
+            </View>
+            <Switch
+              value={showActionButtons}
+              onValueChange={saveShowActionButtons}
               trackColor={{ false: Colors.border, true: Colors.primary }}
               thumbColor={Colors.card}
             />
@@ -208,6 +221,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     gap: 12,
+  },
+  settingRowBorder: {
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
   },
   settingInfo: { flex: 1 },
   settingLabel: {
