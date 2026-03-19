@@ -6,57 +6,53 @@ import {
   FlatList,
   Image,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApp } from '../../context/AppContext';
 import { useWatchlist } from '../../hooks/useWatchlist';
+import { ProductDetailModal } from '../../components/ProductCard';
 import Colors from '../../constants/colors';
 
 export default function WatchlistScreen() {
   const { user } = useApp();
   const { watchlist, loading, removeItem, reload } = useWatchlist(user);
   const [removingId, setRemovingId] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [detailVisible, setDetailVisible] = useState(false);
 
-  const handleRemove = (product) => {
-    Alert.alert(
-      'Remove item?',
-      `Remove "${product.title}" from your watchlist?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            setRemovingId(product.id);
-            await removeItem(product.id);
-            setRemovingId(null);
-          },
-        },
-      ]
-    );
+  const handleRemove = async (product) => {
+    setRemovingId(product.id);
+    setDetailVisible(false);
+    await removeItem(product.id);
+    setRemovingId(null);
   };
 
   const renderItem = ({ item }) => (
     <View style={styles.card}>
-      <Image
-        source={{ uri: item.thumbnail }}
-        style={styles.thumb}
-        resizeMode="cover"
-      />
-      <View style={styles.info}>
-        <Text style={styles.category}>{item.category?.toUpperCase()}</Text>
-        <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
-        <View style={styles.row}>
-          <Text style={styles.price}>${item.price?.toFixed(2)}</Text>
-          {item.rating > 0 && (
-            <Text style={styles.rating}>★ {item.rating?.toFixed(1)}</Text>
-          )}
+      <TouchableOpacity
+        style={styles.cardContent}
+        activeOpacity={0.7}
+        onPress={() => { setSelectedProduct(item); setDetailVisible(true); }}
+      >
+        <Image
+          source={{ uri: item.thumbnail }}
+          style={styles.thumb}
+          resizeMode="cover"
+        />
+        <View style={styles.info}>
+          <Text style={styles.category}>{item.category?.toUpperCase()}</Text>
+          <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
+          <View style={styles.row}>
+            <Text style={styles.price}>${item.price?.toFixed(2)}</Text>
+            {item.rating > 0 && (
+              <Text style={styles.rating}>★ {item.rating?.toFixed(1)}</Text>
+            )}
+          </View>
+          <Text style={styles.source}>{item.source}</Text>
         </View>
-        <Text style={styles.source}>{item.source}</Text>
-      </View>
+      </TouchableOpacity>
 
       {removingId === item.id ? (
         <ActivityIndicator style={styles.removeBtn} size="small" color={Colors.nope} />
@@ -99,6 +95,14 @@ export default function WatchlistScreen() {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
         />
       )}
+
+      {/* Product detail modal */}
+      <ProductDetailModal
+        product={selectedProduct}
+        visible={detailVisible}
+        onClose={() => setDetailVisible(false)}
+        onRemove={selectedProduct ? () => handleRemove(selectedProduct) : undefined}
+      />
     </SafeAreaView>
   );
 }
@@ -135,6 +139,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  cardContent: {
+    flex: 1,
+    flexDirection: 'row',
+    overflow: 'hidden',
   },
   thumb: {
     width: 100,

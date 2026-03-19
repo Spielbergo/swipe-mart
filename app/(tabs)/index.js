@@ -24,7 +24,10 @@ export default function DiscoverScreen() {
   const [searchVisible, setSearchVisible] = useState(false);
   const [savedCount, setSavedCount] = useState(0);
   const [skipCount, setSkipCount] = useState(0);
+  const [maybeCount, setMaybeCount] = useState(0);
+  const [requeuedItems, setRequeuedItems] = useState([]);
   const [toastVisible, setToastVisible] = useState(false);
+  const [toastContent, setToastContent] = useState('');
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const deckRef = useRef();
 
@@ -39,7 +42,8 @@ export default function DiscoverScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const showSavedToast = useCallback(() => {
+  const showToast = useCallback((message) => {
+    setToastContent(message);
     setToastVisible(true);
     Animated.sequence([
       Animated.timing(toastOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
@@ -47,6 +51,8 @@ export default function DiscoverScreen() {
       Animated.timing(toastOpacity, { toValue: 0, duration: 250, useNativeDriver: true }),
     ]).start(() => setToastVisible(false));
   }, [toastOpacity]);
+
+  const showSavedToast = useCallback(() => showToast('♥ Saved!'), [showToast]);
 
   const handleSwipeRight = useCallback(async (product) => {
     setSavedCount((c) => c + 1);
@@ -61,6 +67,13 @@ export default function DiscoverScreen() {
   const handleSwipeLeft = useCallback((product) => {
     setSkipCount((c) => c + 1);
   }, []);
+
+  const handleSwipeUp = useCallback((product) => {
+    setMaybeCount((c) => c + 1);
+    showToast('↩ Maybe!');
+    // Re-append with a unique key so it reappears at the end of the deck
+    setRequeuedItems((prev) => [...prev, { ...product, id: `${product.id}_r${Date.now()}` }]);
+  }, [showToast]);
 
   const handleSearch = useCallback(({ query, category }) => {
     setSearchQuery(query);
@@ -122,13 +135,18 @@ export default function DiscoverScreen() {
         </View>
         <View style={styles.statDivider} />
         <View style={styles.stat}>
-          <Text style={styles.statValue}>{products.length}</Text>
-          <Text style={styles.statLabel}>Loaded</Text>
+          <Text style={styles.statValue}>{maybeCount}</Text>
+          <Text style={styles.statLabel}>Maybe</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.stat}>
           <Text style={styles.statValue}>{skipCount}</Text>
           <Text style={styles.statLabel}>Skipped</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.stat}>
+          <Text style={styles.statValue}>{products.length}</Text>
+          <Text style={styles.statLabel}>Loaded</Text>
         </View>
       </View>
 
@@ -150,10 +168,11 @@ export default function DiscoverScreen() {
         ) : (
           <SwipeDeck
             ref={deckRef}
-            data={products}
+            data={[...products, ...requeuedItems]}
             renderCard={renderCard}
             onSwipeLeft={handleSwipeLeft}
             onSwipeRight={handleSwipeRight}
+            onSwipeUp={handleSwipeUp}
             onEndReached={loadMore}
             renderEmpty={renderEmpty}
           />
@@ -170,6 +189,12 @@ export default function DiscoverScreen() {
             <Text style={styles.actionBtnLabel}>✕</Text>
           </TouchableOpacity>
           <TouchableOpacity
+            style={[styles.actionBtn, styles.actionBtnMaybe]}
+            onPress={() => deckRef.current?.swipeUp()}
+          >
+            <Text style={styles.actionBtnLabel}>↩</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[styles.actionBtn, styles.actionBtnSave]}
             onPress={() => deckRef.current?.swipeRight()}
           >
@@ -178,10 +203,10 @@ export default function DiscoverScreen() {
         </View>
       )}
 
-      {/* Saved toast */}
+      {/* Toast */}
       {toastVisible && (
         <Animated.View style={[styles.toast, { opacity: toastOpacity }]} pointerEvents="none">
-          <Text style={styles.toastText}>♥ Saved!</Text>
+          <Text style={styles.toastText}>{toastContent}</Text>
         </Animated.View>
       )}
 
@@ -370,6 +395,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.card,
     borderWidth: 2,
     borderColor: Colors.nope,
+  },
+  actionBtnMaybe: {
+    backgroundColor: Colors.card,
+    borderWidth: 2,
+    borderColor: Colors.maybe,
   },
   actionBtnSave: {
     backgroundColor: Colors.card,

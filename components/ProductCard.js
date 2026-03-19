@@ -91,7 +91,7 @@ export default function ProductCard({ product, isTop = false, forceSwipe }) {
         {/* Action hint (only on top card) */}
         {isTop && (
           <View style={styles.hint}>
-            <Text style={styles.hintText}>← Skip  •  Tap for details  •  Save →</Text>
+            <Text style={styles.hintText}>← Skip  •  ↑ Maybe  •  Tap for details  •  Save →</Text>
           </View>
         )}
       </TouchableOpacity>
@@ -112,7 +112,7 @@ export default function ProductCard({ product, isTop = false, forceSwipe }) {
 // Detail Modal
 // ─────────────────────────────────────────────
 
-function ProductDetailModal({ product, visible, onClose, onSave, onSkip }) {
+export function ProductDetailModal({ product, visible, onClose, onSave, onSkip, onRemove }) {
   if (!product) return null;
 
   return (
@@ -120,6 +120,11 @@ function ProductDetailModal({ product, visible, onClose, onSave, onSkip }) {
       <View style={modal.container}>
         {/* Handle bar */}
         <View style={modal.handle} />
+
+        {/* Close button */}
+        <Pressable style={modal.closeBtn} onPress={onClose}>
+          <Text style={modal.closeBtnText}>✕</Text>
+        </Pressable>
 
         <ScrollView showsVerticalScrollIndicator={false}>
           <Image
@@ -175,12 +180,25 @@ function ProductDetailModal({ product, visible, onClose, onSave, onSkip }) {
 
         {/* CTA row */}
         <View style={modal.ctaRow}>
-          <Pressable style={[modal.cta, modal.ctaSkip]} onPress={onSkip}>
-            <Text style={modal.ctaSkipText}>✕  Skip</Text>
-          </Pressable>
-          <Pressable style={[modal.cta, modal.ctaSave]} onPress={onSave}>
-            <Text style={modal.ctaSaveText}>♥  Save</Text>
-          </Pressable>
+          {onRemove ? (
+            <>
+              <Pressable style={[modal.cta, modal.ctaSkip]} onPress={onRemove}>
+                <Text style={modal.ctaSkipText}>✕  Remove</Text>
+              </Pressable>
+              <Pressable style={[modal.cta, modal.ctaClose]} onPress={onClose}>
+                <Text style={modal.ctaCloseText}>✓  Close</Text>
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <Pressable style={[modal.cta, modal.ctaSkip]} onPress={onSkip}>
+                <Text style={modal.ctaSkipText}>✕  Skip</Text>
+              </Pressable>
+              <Pressable style={[modal.cta, modal.ctaSave]} onPress={onSave}>
+                <Text style={modal.ctaSaveText}>♥  Save</Text>
+              </Pressable>
+            </>
+          )}
         </View>
       </View>
     </Modal>
@@ -326,6 +344,23 @@ const modal = StyleSheet.create({
     marginTop: 10,
     marginBottom: 4,
   },
+  closeBtn: {
+    position: 'absolute',
+    top: 10,
+    right: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  closeBtnText: {
+    color: Colors.textSecondary,
+    fontSize: 14,
+    fontWeight: '700',
+  },
   image: {
     width: '100%',
     height: 300,
@@ -454,5 +489,15 @@ const modal = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: Colors.textInverse,
+  },
+  ctaClose: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  ctaCloseText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.textSecondary,
   },
 });

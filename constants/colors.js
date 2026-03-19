@@ -9,6 +9,8 @@ export const Colors = {
   likeLight: '#E6FBF0',
   nope: '#FF5A6E',
   nopeLight: '#FFEEF0',
+  maybe: '#F59E0B',
+  maybeLight: '#FEF3C7',
 
   // Neutrals
   background: '#F4F5FB',

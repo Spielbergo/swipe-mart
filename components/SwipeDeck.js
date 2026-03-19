@@ -9,8 +9,9 @@ import {
 } from 'react-native';
 import Colors from '../constants/colors';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.28;
+const SWIPE_UP_THRESHOLD = SCREEN_HEIGHT * 0.22;
 const SWIPE_OUT_DURATION = 220;
 const ROTATION_RANGE = 15;
 const CARDS_IN_VIEW = 3;
@@ -20,6 +21,7 @@ const SwipeDeck = forwardRef(function SwipeDeck({
   renderCard,
   onSwipeLeft,
   onSwipeRight,
+  onSwipeUp,
   onEndReached,
   renderEmpty,
 }, ref) {
@@ -31,25 +33,31 @@ const SwipeDeck = forwardRef(function SwipeDeck({
   const dataRef = useRef(data);
   const onSwipeLeftRef = useRef(onSwipeLeft);
   const onSwipeRightRef = useRef(onSwipeRight);
+  const onSwipeUpRef = useRef(onSwipeUp);
   const onEndReachedRef = useRef(onEndReached);
 
   useEffect(() => { currentIndexRef.current = currentIndex; }, [currentIndex]);
   useEffect(() => { dataRef.current = data; }, [data]);
   useEffect(() => { onSwipeLeftRef.current = onSwipeLeft; }, [onSwipeLeft]);
   useEffect(() => { onSwipeRightRef.current = onSwipeRight; }, [onSwipeRight]);
+  useEffect(() => { onSwipeUpRef.current = onSwipeUp; }, [onSwipeUp]);
   useEffect(() => { onEndReachedRef.current = onEndReached; }, [onEndReached]);
 
   // ── Swipe out — reads from refs so it always sees current index/data ──────
   const forceSwipe = useCallback((direction) => {
-    const x = direction === 'right' ? SCREEN_WIDTH * 1.5 : -SCREEN_WIDTH * 1.5;
+    const toValue =
+      direction === 'right' ? { x: SCREEN_WIDTH * 1.5, y: 0 } :
+      direction === 'left'  ? { x: -SCREEN_WIDTH * 1.5, y: 0 } :
+                              { x: 0, y: -SCREEN_HEIGHT * 1.5 };
     Animated.timing(position, {
-      toValue: { x, y: 0 },
+      toValue,
       duration: SWIPE_OUT_DURATION,
       useNativeDriver: false,
     }).start(() => {
       const item = dataRef.current[currentIndexRef.current];
       if (direction === 'right') onSwipeRightRef.current?.(item);
-      else onSwipeLeftRef.current?.(item);
+      else if (direction === 'left') onSwipeLeftRef.current?.(item);
+      else onSwipeUpRef.current?.(item);
       position.setValue({ x: 0, y: 0 });
       setCurrentIndex((prev) => {
         const next = prev + 1;
@@ -73,10 +81,11 @@ const SwipeDeck = forwardRef(function SwipeDeck({
   useEffect(() => { forceSwipeRef.current = forceSwipe; }, [forceSwipe]);
   useEffect(() => { resetPositionRef.current = resetPosition; }, [resetPosition]);
 
-  // Expose swipeLeft / swipeRight to parent via ref
+  // Expose swipeLeft / swipeRight / swipeUp to parent via ref
   useImperativeHandle(ref, () => ({
     swipeLeft: () => forceSwipeRef.current('left'),
     swipeRight: () => forceSwipeRef.current('right'),
+    swipeUp: () => forceSwipeRef.current('up'),
   }));
 
   // ── Pan Responder — created once, delegates through refs ─────────────────
@@ -89,7 +98,9 @@ const SwipeDeck = forwardRef(function SwipeDeck({
         position.setValue({ x: gesture.dx, y: gesture.dy });
       },
       onPanResponderRelease: (_, gesture) => {
-        if (gesture.dx > SWIPE_THRESHOLD) {
+        if (gesture.dy < -SWIPE_UP_THRESHOLD && Math.abs(gesture.dx) < SWIPE_THRESHOLD) {
+          forceSwipeRef.current('up');
+        } else if (gesture.dx > SWIPE_THRESHOLD) {
           forceSwipeRef.current('right');
         } else if (gesture.dx < -SWIPE_THRESHOLD) {
           forceSwipeRef.current('left');
@@ -118,6 +129,12 @@ const SwipeDeck = forwardRef(function SwipeDeck({
 
   const nopeOpacity = position.x.interpolate({
     inputRange: [-SCREEN_WIDTH * 0.15, 0],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
+
+  const maybeOpacity = position.y.interpolate({
+    inputRange: [-SCREEN_HEIGHT * 0.15, 0],
     outputRange: [1, 0],
     extrapolate: 'clamp',
   });
@@ -158,6 +175,9 @@ const SwipeDeck = forwardRef(function SwipeDeck({
             </Animated.View>
             <Animated.View style={[styles.badge, styles.nopeBadge, { opacity: nopeOpacity }]}>
               <Text style={[styles.badgeText, { color: Colors.nope }]}>SKIP</Text>
+            </Animated.View>
+            <Animated.View style={[styles.badge, styles.maybeBadge, { opacity: maybeOpacity }]}>
+              <Text style={[styles.badgeText, { color: Colors.maybe }]}>MAYBE</Text>
             </Animated.View>
             {renderCard(item, { isTop: true, forceSwipe })}
           </Animated.View>
@@ -239,6 +259,12 @@ const styles = StyleSheet.create({
     right: 20,
     borderColor: Colors.nope,
     transform: [{ rotate: '15deg' }],
+  },
+  maybeBadge: {
+    alignSelf: 'center',
+    left: '35%',
+    borderColor: Colors.maybe,
+    transform: [{ rotate: '-5deg' }],
   },
   badgeText: {
     fontSize: 22,
