@@ -2,10 +2,10 @@
  * Unified product API layer.
  *
  * Sources auto-enable based on environment variables:
- *  - DummyJSON    — always active (no key, dev fallback + image cards)
- *  - Craigslist   — enabled when EXPO_PUBLIC_CRAIGSLIST_KEY is set
- *  - eBay         — enabled when EXPO_PUBLIC_EBAY_ENABLED=true
- *  - Etsy         — enabled when EXPO_PUBLIC_ETSY_API_KEY is set
+ *  - DummyJSON  — always active (no key needed, development fallback)
+ *  - eBay       — enabled when EXPO_PUBLIC_EBAY_ENABLED=true
+ *                 (set EBAY_CLIENT_ID + EBAY_CLIENT_SECRET in Netlify dashboard)
+ *  - Etsy       — enabled when EXPO_PUBLIC_ETSY_API_KEY is set
  *
  * To add another source:
  *  1. Create services/api/myNewApi.js exporting searchProducts() + browseProducts()
@@ -13,20 +13,14 @@
  */
 
 import * as dummyJson from './dummyJsonApi';
-import * as craigslistApi from './craigslistApi';
 import * as ebayApi from './ebayApi';
 import * as etsyApi from './etsyApi';
 
-const CRAIGSLIST_ENABLED = Boolean(process.env.EXPO_PUBLIC_CRAIGSLIST_KEY);
 const EBAY_ENABLED = process.env.EXPO_PUBLIC_EBAY_ENABLED === 'true';
 const ETSY_ENABLED = Boolean(process.env.EXPO_PUBLIC_ETSY_API_KEY);
 
 function buildSources() {
   const sources = [dummyJson];
-  if (CRAIGSLIST_ENABLED) {
-    sources.push(craigslistApi);
-    console.log('[API] Craigslist source enabled');
-  }
   if (EBAY_ENABLED) {
     sources.push(ebayApi);
     console.log('[API] eBay source enabled');
