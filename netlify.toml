@@ -1,0 +1,18 @@
+[build]
+  command   = "npm run build:web"
+  publish   = "dist"
+
+# Ensure environment variables are available at build time.
+# Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY
+# in: Netlify → Site → Site configuration → Environment variables
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA fallback – all unmatched paths serve index.html
+# (expo-router in static mode pre-renders known routes as real HTML files,
+#  but this catches any dynamic segments)
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
