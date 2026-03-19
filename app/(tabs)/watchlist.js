@@ -11,13 +11,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApp } from '../../context/AppContext';
-import { useWatchlist } from '../../hooks/useWatchlist';
 import { ProductDetailModal } from '../../components/ProductCard';
 import Colors from '../../constants/colors';
 
 export default function WatchlistScreen() {
-  const { user } = useApp();
-  const { watchlist, loading, removeItem, reload } = useWatchlist(user);
+  const { user, watchlist, watchlistLoading: loading, removeItem, reloadWatchlist: reload } = useApp();
   const [removingId, setRemovingId] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [detailVisible, setDetailVisible] = useState(false);

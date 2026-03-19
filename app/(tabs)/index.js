@@ -13,14 +13,13 @@ import SwipeDeck from '../../components/SwipeDeck';
 import ProductCard from '../../components/ProductCard';
 import SearchModal from '../../components/SearchModal';
 import { useProducts } from '../../hooks/useProducts';
-import { useWatchlist } from '../../hooks/useWatchlist';
 import { useApp } from '../../context/AppContext';
 import Colors from '../../constants/colors';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function DiscoverScreen() {
-  const { user, location, requestLocation, searchQuery, setSearchQuery, selectedCategory, setSelectedCategory } = useApp();
+  const { user, location, requestLocation, searchQuery, setSearchQuery, selectedCategory, setSelectedCategory, addItem } = useApp();
   const [searchVisible, setSearchVisible] = useState(false);
   const [savedCount, setSavedCount] = useState(0);
   const [skipCount, setSkipCount] = useState(0);
@@ -32,7 +31,6 @@ export default function DiscoverScreen() {
   const deckRef = useRef();
 
   const { products, loading, error, loadMore, refresh } = useProducts(searchQuery, location, selectedCategory);
-  const { addItem } = useWatchlist(user);
 
   // Request location on first mount
   useEffect(() => {

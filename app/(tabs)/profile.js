@@ -12,12 +12,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApp } from '../../context/AppContext';
 import { signOut } from '../../services/supabase';
-import { useWatchlist } from '../../hooks/useWatchlist';
 import Colors from '../../constants/colors';
 
 export default function ProfileScreen() {
-  const { user, location, requestLocation, locationError } = useApp();
-  const { watchlist } = useWatchlist(user);
+  const { user, location, requestLocation, locationError, watchlist } = useApp();
   const [signingOut, setSigningOut] = useState(false);
   const [locationEnabled, setLocationEnabled] = useState(!!location);
 

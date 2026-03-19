@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import * as Location from 'expo-location';
 import { supabase, getCurrentUser } from '../services/supabase';
+import { useWatchlist } from '../hooks/useWatchlist';
 
 const AppContext = createContext(null);
 
@@ -14,6 +15,9 @@ export function AppProvider({ children }) {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+
+  // ── Watchlist (shared across all tabs) ────────
+  const watchlistHook = useWatchlist(user);
 
   // ── Auth ──────────────────────────────────────
   useEffect(() => {
@@ -66,6 +70,14 @@ export function AppProvider({ children }) {
     setSearchQuery,
     selectedCategory,
     setSelectedCategory,
+
+    // Watchlist
+    watchlist: watchlistHook.watchlist,
+    watchlistLoading: watchlistHook.loading,
+    addItem: watchlistHook.addItem,
+    removeItem: watchlistHook.removeItem,
+    isInWatchlist: watchlistHook.isInWatchlist,
+    reloadWatchlist: watchlistHook.reload,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
