@@ -71,7 +71,7 @@ export default function ProductCard({ product, isTop = false, forceSwipe }) {
 
           <View style={styles.row}>
             <Text style={styles.price}>${product.price.toFixed(2)}</Text>
-            {product.originalPrice && product.originalPrice > product.price && (
+            {!!product.originalPrice && product.originalPrice > product.price && (
               <Text style={styles.originalPrice}>${product.originalPrice.toFixed(2)}</Text>
             )}
             <View style={styles.spacer} />
@@ -83,7 +83,7 @@ export default function ProductCard({ product, isTop = false, forceSwipe }) {
             )}
           </View>
 
-          {product.brand && product.brand !== product.category && (
+          {!!product.brand && product.brand !== product.category && (
             <Text style={styles.brand} numberOfLines={1}>{product.brand}</Text>
           )}
         </View>
@@ -134,7 +134,7 @@ function ProductDetailModal({ product, visible, onClose, onSave, onSkip }) {
 
             <View style={modal.priceRow}>
               <Text style={modal.price}>${product.price.toFixed(2)}</Text>
-              {product.originalPrice && product.originalPrice > product.price && (
+              {!!product.originalPrice && product.originalPrice > product.price && (
                 <Text style={modal.originalPrice}>${product.originalPrice.toFixed(2)}</Text>
               )}
               {product.discountPercentage > 0 && (
