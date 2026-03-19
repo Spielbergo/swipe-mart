@@ -229,6 +229,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 4,
     elevation: 2,
+    // suppress browser focus ring on web
+    outlineStyle: 'none',
   },
   searchBarIcon: {
     fontSize: 16,

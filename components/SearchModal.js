@@ -6,7 +6,7 @@ import {
   TextInput,
   Modal,
   Pressable,
-  FlatList,
+  ScrollView,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -209,9 +209,14 @@ const styles = StyleSheet.create({
   categorySection: {
     flex: 1,
   },
+  catScroll: {
+    flex: 1,
+  },
   catList: {
-    paddingVertical: 4,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
+    paddingVertical: 4,
   },
   catChip: {
     paddingHorizontal: 14,
@@ -220,8 +225,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderWidth: 1.5,
     borderColor: Colors.border,
-    marginRight: 8,
-    maxWidth: 130,
   },
   catChipActive: {
     backgroundColor: Colors.primary,
