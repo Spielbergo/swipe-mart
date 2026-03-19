@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import {
   View,
   Animated,
@@ -9,10 +9,10 @@ import {
 } from 'react-native';
 import Colors from '../constants/colors';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.28;
 const SWIPE_OUT_DURATION = 220;
-const ROTATION_RANGE = 15; // degrees
+const ROTATION_RANGE = 15;
 const CARDS_IN_VIEW = 3;
 
 export default function SwipeDeck({
@@ -25,40 +25,41 @@ export default function SwipeDeck({
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const position = useRef(new Animated.ValueXY()).current;
-  const swipeDirection = useRef(null); // 'left' | 'right' | null
 
-  // ── Swipe Out ────────────────────────────────
-  const forceSwipe = useCallback(
-    (direction) => {
-      const x = direction === 'right' ? SCREEN_WIDTH * 1.5 : -SCREEN_WIDTH * 1.5;
-      Animated.timing(position, {
-        toValue: { x, y: 0 },
-        duration: SWIPE_OUT_DURATION,
-        useNativeDriver: false,
-      }).start(() => onSwipeComplete(direction));
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [currentIndex]
-  );
+  // Keep latest values in refs so PanResponder (created once) never goes stale
+  const currentIndexRef = useRef(currentIndex);
+  const dataRef = useRef(data);
+  const onSwipeLeftRef = useRef(onSwipeLeft);
+  const onSwipeRightRef = useRef(onSwipeRight);
+  const onEndReachedRef = useRef(onEndReached);
 
-  const onSwipeComplete = useCallback(
-    (direction) => {
-      const item = data[currentIndex];
-      direction === 'right' ? onSwipeRight?.(item) : onSwipeLeft?.(item);
+  useEffect(() => { currentIndexRef.current = currentIndex; }, [currentIndex]);
+  useEffect(() => { dataRef.current = data; }, [data]);
+  useEffect(() => { onSwipeLeftRef.current = onSwipeLeft; }, [onSwipeLeft]);
+  useEffect(() => { onSwipeRightRef.current = onSwipeRight; }, [onSwipeRight]);
+  useEffect(() => { onEndReachedRef.current = onEndReached; }, [onEndReached]);
+
+  // ── Swipe out — reads from refs so it always sees current index/data ──────
+  const forceSwipe = useCallback((direction) => {
+    const x = direction === 'right' ? SCREEN_WIDTH * 1.5 : -SCREEN_WIDTH * 1.5;
+    Animated.timing(position, {
+      toValue: { x, y: 0 },
+      duration: SWIPE_OUT_DURATION,
+      useNativeDriver: false,
+    }).start(() => {
+      const item = dataRef.current[currentIndexRef.current];
+      if (direction === 'right') onSwipeRightRef.current?.(item);
+      else onSwipeLeftRef.current?.(item);
       position.setValue({ x: 0, y: 0 });
-      swipeDirection.current = null;
       setCurrentIndex((prev) => {
         const next = prev + 1;
-        if (next >= data.length - 2) onEndReached?.();
+        if (next >= dataRef.current.length - 2) onEndReachedRef.current?.();
         return next;
       });
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [currentIndex, data]
-  );
+    });
+  }, [position]);
 
   const resetPosition = useCallback(() => {
-    swipeDirection.current = null;
     Animated.spring(position, {
       toValue: { x: 0, y: 0 },
       useNativeDriver: false,
@@ -66,22 +67,32 @@ export default function SwipeDeck({
     }).start();
   }, [position]);
 
-  // ── Pan Responder ────────────────────────────
+  // Store latest callbacks in refs for PanResponder
+  const forceSwipeRef = useRef(forceSwipe);
+  const resetPositionRef = useRef(resetPosition);
+  useEffect(() => { forceSwipeRef.current = forceSwipe; }, [forceSwipe]);
+  useEffect(() => { resetPositionRef.current = resetPosition; }, [resetPosition]);
+
+  // ── Pan Responder — created once, delegates through refs ─────────────────
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gesture) =>
+        Math.abs(gesture.dx) > 5 || Math.abs(gesture.dy) > 5,
       onPanResponderMove: (_, gesture) => {
         position.setValue({ x: gesture.dx, y: gesture.dy });
-        swipeDirection.current = gesture.dx > 0 ? 'right' : 'left';
       },
       onPanResponderRelease: (_, gesture) => {
         if (gesture.dx > SWIPE_THRESHOLD) {
-          forceSwipe('right');
+          forceSwipeRef.current('right');
         } else if (gesture.dx < -SWIPE_THRESHOLD) {
-          forceSwipe('left');
+          forceSwipeRef.current('left');
         } else {
-          resetPosition();
+          resetPositionRef.current();
         }
+      },
+      onPanResponderTerminate: () => {
+        resetPositionRef.current();
       },
     })
   ).current;
@@ -105,79 +116,78 @@ export default function SwipeDeck({
     extrapolate: 'clamp',
   });
 
-  const topCardStyle = {
-    transform: [{ translateX: position.x }, { translateY: position.y }, { rotate }],
-  };
+  // ── Render ────────────────────────────────────────────────────────────────
+  if (currentIndex >= data.length) {
+    return (
+      <View style={styles.container}>
+        {renderEmpty ? renderEmpty() : <DefaultEmpty />}
+      </View>
+    );
+  }
 
-  // ── Render helpers ────────────────────────────
-  const renderCards = () => {
-    if (currentIndex >= data.length) {
-      return renderEmpty ? renderEmpty() : <DefaultEmpty />;
-    }
+  const cards = data
+    .slice(currentIndex, currentIndex + CARDS_IN_VIEW)
+    .map((item, i) => {
+      const isTop = i === 0;
 
-    return data
-      .slice(currentIndex, currentIndex + CARDS_IN_VIEW)
-      .map((item, i) => {
-        const isTop = i === 0;
-
-        if (isTop) {
-          return (
-            <Animated.View
-              key={item.id}
-              style={[styles.cardContainer, topCardStyle, { zIndex: 10 }]}
-              {...panResponder.panHandlers}
-            >
-              {/* Like badge */}
-              <Animated.View style={[styles.badge, styles.likeBadge, { opacity: likeOpacity }]}>
-                <Text style={[styles.badgeText, { color: Colors.like }]}>SAVE</Text>
-              </Animated.View>
-
-              {/* Nope badge */}
-              <Animated.View style={[styles.badge, styles.nopeBadge, { opacity: nopeOpacity }]}>
-                <Text style={[styles.badgeText, { color: Colors.nope }]}>SKIP</Text>
-              </Animated.View>
-
-              {renderCard(item, { isTop: true, forceSwipe })}
-            </Animated.View>
-          );
-        }
-
-        // Background cards – scale up slightly as the top card moves away
-        const scaleValue = position.x.interpolate({
-          inputRange: [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
-          outputRange: [1, 0.94 - i * 0.02, 1],
-          extrapolate: 'clamp',
-        });
-
-        const translateY = position.x.interpolate({
-          inputRange: [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
-          outputRange: [-(i * 8), i * 8, -(i * 8)],
-          extrapolate: 'clamp',
-        });
-
+      if (isTop) {
         return (
           <Animated.View
             key={item.id}
             style={[
               styles.cardContainer,
               {
-                zIndex: 10 - i,
-                transform: [{ scale: scaleValue }, { translateY }],
+                zIndex: 10,
+                transform: [
+                  { translateX: position.x },
+                  { translateY: position.y },
+                  { rotate },
+                ],
               },
             ]}
+            {...panResponder.panHandlers}
           >
-            {renderCard(item, { isTop: false })}
+            <Animated.View style={[styles.badge, styles.likeBadge, { opacity: likeOpacity }]}>
+              <Text style={[styles.badgeText, { color: Colors.like }]}>SAVE</Text>
+            </Animated.View>
+            <Animated.View style={[styles.badge, styles.nopeBadge, { opacity: nopeOpacity }]}>
+              <Text style={[styles.badgeText, { color: Colors.nope }]}>SKIP</Text>
+            </Animated.View>
+            {renderCard(item, { isTop: true, forceSwipe })}
           </Animated.View>
         );
-      })
-      .reverse(); // render back-cards first so top is on top
-  };
+      }
 
-  return (
-    <View style={styles.container}>
-      {renderCards()}
-    </View>
-  );
+      const scaleValue = position.x.interpolate({
+        inputRange: [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
+        outputRange: [1, 0.94 - i * 0.02, 1],
+        extrapolate: 'clamp',
+      });
+
+      const translateY = position.x.interpolate({
+        inputRange: [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
+        outputRange: [-(i * 8), i * 8, -(i * 8)],
+        extrapolate: 'clamp',
+      });
+
+      return (
+        <Animated.View
+          key={item.id}
+          style={[
+            styles.cardContainer,
+            {
+              zIndex: 10 - i,
+              transform: [{ scale: scaleValue }, { translateY }],
+            },
+          ]}
+        >
+          {renderCard(item, { isTop: false })}
+        </Animated.View>
+      );
+    })
+    .reverse();
+
+  return <View style={styles.container}>{cards}</View>;
 }
 
 // ── Public helpers to call from outside ──────────
