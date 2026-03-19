@@ -11,14 +11,28 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
+// During Expo static export, code runs in Node.js where `window` doesn't exist.
+// This no-op storage shim prevents Supabase from crashing during pre-rendering.
+// In the browser and on device, AsyncStorage (which maps to localStorage on web)
+// is used as normal.
+const isBrowser = typeof window !== 'undefined';
+
+const ssrSafeStorage = isBrowser
+  ? AsyncStorage
+  : {
+      getItem: () => Promise.resolve(null),
+      setItem: () => Promise.resolve(),
+      removeItem: () => Promise.resolve(),
+    };
+
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder',
   {
     auth: {
-      storage: AsyncStorage,
-      autoRefreshToken: true,
-      persistSession: true,
+      storage: ssrSafeStorage,
+      autoRefreshToken: isBrowser,
+      persistSession: isBrowser,
       detectSessionInUrl: false,
     },
   }
