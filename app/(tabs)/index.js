@@ -93,16 +93,24 @@ export default function DiscoverScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.appName}>SwipeMart</Text>
+        <Text style={styles.appName}>SwipeMart</Text>
+        <TouchableOpacity
+          style={styles.searchBar}
+          onPress={() => setSearchVisible(true)}
+          activeOpacity={0.75}
+        >
+          <Text style={styles.searchBarIcon}>🔎</Text>
+          <Text
+            style={[styles.searchBarText, !searchQuery && styles.searchBarPlaceholder]}
+            numberOfLines={1}
+          >
+            {searchQuery || 'Search products…'}
+          </Text>
           {searchQuery ? (
-            <Text style={styles.searchHint} numberOfLines={1}>"{searchQuery}"</Text>
+            <Text style={styles.searchBarEdit}>Edit</Text>
           ) : (
-            <Text style={styles.searchHint}>Browsing all items</Text>
+            <Text style={styles.searchBarEdit}>Search</Text>
           )}
-        </View>
-        <TouchableOpacity style={styles.searchBtn} onPress={() => setSearchVisible(true)}>
-          <Text style={styles.searchBtnText}>🔎 Search</Text>
         </TouchableOpacity>
       </View>
 
@@ -195,9 +203,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 12,
@@ -207,22 +212,41 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: Colors.primary,
     letterSpacing: -0.5,
+    marginBottom: 10,
   },
-  searchHint: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    marginTop: 2,
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.card,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    gap: 8,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  searchBtn: {
-    backgroundColor: Colors.primaryLight,
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-    borderRadius: 20,
+  searchBarIcon: {
+    fontSize: 16,
   },
-  searchBtnText: {
-    color: Colors.primary,
+  searchBarText: {
+    flex: 1,
+    fontSize: 15,
+    color: Colors.textPrimary,
+    fontWeight: '500',
+  },
+  searchBarPlaceholder: {
+    color: Colors.textMuted,
+    fontWeight: '400',
+  },
+  searchBarEdit: {
+    fontSize: 13,
     fontWeight: '700',
-    fontSize: 14,
+    color: Colors.primary,
   },
   statsBar: {
     flexDirection: 'row',

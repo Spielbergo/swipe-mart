@@ -111,7 +111,10 @@ export default function SearchModal({ visible, onClose, onSearch, initialQuery =
                     style={[styles.catChip, active && styles.catChipActive]}
                     onPress={() => setSelectedCategory(item.value)}
                   >
-                    <Text style={[styles.catChipText, active && styles.catChipTextActive]}>
+                    <Text
+                      style={[styles.catChipText, active && styles.catChipTextActive]}
+                      numberOfLines={1}
+                    >
                       {item.label}
                     </Text>
                   </Pressable>
@@ -211,13 +214,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   catChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 9,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 20,
     backgroundColor: Colors.surface,
     borderWidth: 1.5,
     borderColor: Colors.border,
     marginRight: 8,
+    maxWidth: 130,
   },
   catChipActive: {
     backgroundColor: Colors.primary,
