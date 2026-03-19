@@ -80,11 +80,18 @@ export async function getCategories() {
  * If category is provided, fetches products from that category instead.
  * @param {{ limit?: number, skip?: number, category?: string }} options
  */
-export async function browseProducts({ limit = 20, skip = 0, category } = {}) {
+export async function browseProducts({ limit = 80, skip = 0, category } = {}) {
   if (category) {
     return getProductsByCategory(category, { limit, skip });
   }
-  const res = await fetch(`${BASE_URL}/products?limit=${limit}&skip=${skip}`);
+  // limit=0 tells DummyJSON to return all products at once (194 total).
+  // Only use it on the first page (skip=0) to avoid re-fetching the whole
+  // catalog on loadMore calls.
+  const useAll = skip === 0;
+  const url = useAll
+    ? `${BASE_URL}/products?limit=0`
+    : `${BASE_URL}/products?limit=${limit}&skip=${skip}`;
+  const res = await fetch(url);
   if (!res.ok) throw new Error(`DummyJSON browse failed: ${res.status}`);
   const json = await res.json();
   return {

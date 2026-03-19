@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { searchAllSources, browseAllSources } from '../services/api';
 
-const PAGE_SIZE = 40;
+const PAGE_SIZE = 80;
 
 export function useProducts(query, location, category) {
   const [products, setProducts] = useState([]);
