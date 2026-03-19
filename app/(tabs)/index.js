@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
-  Alert,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import SwipeDeck from '../../components/SwipeDeck';
@@ -24,6 +24,9 @@ export default function DiscoverScreen() {
   const [searchVisible, setSearchVisible] = useState(false);
   const [savedCount, setSavedCount] = useState(0);
   const [skipCount, setSkipCount] = useState(0);
+  const [toastVisible, setToastVisible] = useState(false);
+  const toastOpacity = useRef(new Animated.Value(0)).current;
+  const deckRef = useRef();
 
   const { products, loading, error, loadMore, refresh } = useProducts(searchQuery, location);
   const { addItem } = useWatchlist(user);
@@ -36,14 +39,24 @@ export default function DiscoverScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const showSavedToast = useCallback(() => {
+    setToastVisible(true);
+    Animated.sequence([
+      Animated.timing(toastOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+      Animated.delay(900),
+      Animated.timing(toastOpacity, { toValue: 0, duration: 250, useNativeDriver: true }),
+    ]).start(() => setToastVisible(false));
+  }, [toastOpacity]);
+
   const handleSwipeRight = useCallback(async (product) => {
     setSavedCount((c) => c + 1);
+    showSavedToast();
     try {
       await addItem(product);
     } catch (err) {
       console.warn('[Discover] watchlist error:', err.message);
     }
-  }, [addItem]);
+  }, [addItem, showSavedToast]);
 
   const handleSwipeLeft = useCallback((product) => {
     setSkipCount((c) => c + 1);
@@ -128,6 +141,7 @@ export default function DiscoverScreen() {
           </View>
         ) : (
           <SwipeDeck
+            ref={deckRef}
             data={products}
             renderCard={renderCard}
             onSwipeLeft={handleSwipeLeft}
@@ -138,27 +152,29 @@ export default function DiscoverScreen() {
         )}
       </View>
 
-      {/* Bottom action buttons (for tap-to-swipe) */}
+      {/* Bottom action buttons */}
       {products.length > 0 && !loading && (
         <View style={styles.actionRow}>
           <TouchableOpacity
             style={[styles.actionBtn, styles.actionBtnSkip]}
-            onPress={() => {
-              // handled via renderCard forceSwipe — show visual hint
-              Alert.alert('Tip', 'Drag the card left to skip, or right to save!');
-            }}
+            onPress={() => deckRef.current?.swipeLeft()}
           >
             <Text style={styles.actionBtnLabel}>✕</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtn, styles.actionBtnSave]}
-            onPress={() => {
-              Alert.alert('Tip', 'Drag the card right to save it to your watchlist!');
-            }}
+            onPress={() => deckRef.current?.swipeRight()}
           >
             <Text style={styles.actionBtnLabel}>♥</Text>
           </TouchableOpacity>
         </View>
+      )}
+
+      {/* Saved toast */}
+      {toastVisible && (
+        <Animated.View style={[styles.toast, { opacity: toastOpacity }]} pointerEvents="none">
+          <Text style={styles.toastText}>♥ Saved!</Text>
+        </Animated.View>
       )}
 
       {/* Search modal */}
@@ -336,5 +352,25 @@ const styles = StyleSheet.create({
   },
   actionBtnLabel: {
     fontSize: 22,
+  },
+  toast: {
+    position: 'absolute',
+    alignSelf: 'center',
+    bottom: 110,
+    backgroundColor: Colors.like,
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+    borderRadius: 30,
+    zIndex: 100,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  toastText: {
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: 17,
+    letterSpacing: 0.5,
   },
 });

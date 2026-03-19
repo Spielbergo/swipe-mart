@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback, useEffect } from 'react';
+import React, { useRef, useState, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import {
   View,
   Animated,
@@ -15,14 +15,14 @@ const SWIPE_OUT_DURATION = 220;
 const ROTATION_RANGE = 15;
 const CARDS_IN_VIEW = 3;
 
-export default function SwipeDeck({
+const SwipeDeck = forwardRef(function SwipeDeck({
   data = [],
   renderCard,
   onSwipeLeft,
   onSwipeRight,
   onEndReached,
   renderEmpty,
-}) {
+}, ref) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const position = useRef(new Animated.ValueXY()).current;
 
@@ -72,6 +72,12 @@ export default function SwipeDeck({
   const resetPositionRef = useRef(resetPosition);
   useEffect(() => { forceSwipeRef.current = forceSwipe; }, [forceSwipe]);
   useEffect(() => { resetPositionRef.current = resetPosition; }, [resetPosition]);
+
+  // Expose swipeLeft / swipeRight to parent via ref
+  useImperativeHandle(ref, () => ({
+    swipeLeft: () => forceSwipeRef.current('left'),
+    swipeRight: () => forceSwipeRef.current('right'),
+  }));
 
   // ── Pan Responder — created once, delegates through refs ─────────────────
   const panResponder = useRef(
@@ -188,11 +194,13 @@ export default function SwipeDeck({
     .reverse();
 
   return <View style={styles.container}>{cards}</View>;
-}
+});
+
+export default SwipeDeck;
 
 // ── Public helpers to call from outside ──────────
-// You can get a ref to SwipeDeck and call swipeLeft() / swipeRight() via the
-// forceSwipe prop passed into renderCard's second argument.
+// Use a ref on SwipeDeck and call ref.current.swipeLeft() / swipeRight()
+// or use the forceSwipe prop passed into renderCard's second argument.
 
 function DefaultEmpty() {
   return (
