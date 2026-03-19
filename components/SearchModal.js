@@ -98,29 +98,31 @@ export default function SearchModal({ visible, onClose, onSearch, initialQuery =
           {loadingCategories ? (
             <ActivityIndicator color={Colors.primary} style={{ marginTop: 12 }} />
           ) : (
-            <FlatList
-              data={[{ value: '', label: 'All' }, ...categories.map((c) => ({ value: c, label: formatLabel(c) }))]}
-              keyExtractor={(item) => item.value || '__all__'}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.catList}
-              renderItem={({ item }) => {
-                const active = item.value === selectedCategory;
-                return (
-                  <Pressable
-                    style={[styles.catChip, active && styles.catChipActive]}
-                    onPress={() => setSelectedCategory(item.value)}
-                  >
-                    <Text
-                      style={[styles.catChipText, active && styles.catChipTextActive]}
-                      numberOfLines={1}
+            <ScrollView
+              style={styles.catScroll}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.catList}>
+                {[{ value: '', label: 'All' }, ...categories.map((c) => ({ value: c, label: formatLabel(c) }))].map((item) => {
+                  const active = item.value === selectedCategory;
+                  return (
+                    <Pressable
+                      key={item.value || '__all__'}
+                      style={[styles.catChip, active && styles.catChipActive]}
+                      onPress={() => setSelectedCategory(item.value)}
                     >
-                      {item.label}
-                    </Text>
-                  </Pressable>
-                );
-              }}
-            />
+                      <Text
+                        style={[styles.catChipText, active && styles.catChipTextActive]}
+                        numberOfLines={1}
+                      >
+                        {item.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </ScrollView>
           )}
         </View>
 
