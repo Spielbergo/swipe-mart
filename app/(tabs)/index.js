@@ -28,7 +28,7 @@ export default function DiscoverScreen() {
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const deckRef = useRef();
 
-  const { products, loading, error, loadMore, refresh } = useProducts(searchQuery, location);
+  const { products, loading, error, loadMore, refresh } = useProducts(searchQuery, location, selectedCategory);
   const { addItem } = useWatchlist(user);
 
   // Request location on first mount

@@ -77,9 +77,13 @@ export async function getCategories() {
 
 /**
  * Fetch a general batch of products (no keyword – used as a "browse" feed).
- * @param {{ limit?: number, skip?: number }} options
+ * If category is provided, fetches products from that category instead.
+ * @param {{ limit?: number, skip?: number, category?: string }} options
  */
-export async function browseProducts({ limit = 20, skip = 0 } = {}) {
+export async function browseProducts({ limit = 20, skip = 0, category } = {}) {
+  if (category) {
+    return getProductsByCategory(category, { limit, skip });
+  }
   const res = await fetch(`${BASE_URL}/products?limit=${limit}&skip=${skip}`);
   if (!res.ok) throw new Error(`DummyJSON browse failed: ${res.status}`);
   const json = await res.json();

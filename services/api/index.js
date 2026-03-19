@@ -61,7 +61,9 @@ export async function searchAllSources(query, opts = {}) {
 
 /**
  * Browse (no keyword) across all sources.
+ * Pass { category } in opts to filter by category.
  * @param {object} opts
+ * @param {string} [opts.category]
  */
 export async function browseAllSources(opts = {}) {
   const results = await Promise.allSettled(
@@ -72,6 +74,8 @@ export async function browseAllSources(opts = {}) {
   results.forEach((result) => {
     if (result.status === 'fulfilled') {
       products.push(...result.value.products);
+    } else {
+      console.warn('[API] Browse source failed:', result.reason?.message);
     }
   });
 

@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { searchAllSources, browseAllSources } from '../services/api';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 40;
 
-export function useProducts(query, location) {
+export function useProducts(query, location, category) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -11,28 +11,30 @@ export function useProducts(query, location) {
   const skipRef = useRef(0);
   const seenIdsRef = useRef(new Set());
   const queryRef = useRef(query);
+  const categoryRef = useRef(category);
 
-  // Reset when the search query changes
+  // Reset when query or category changes
   useEffect(() => {
     queryRef.current = query;
+    categoryRef.current = category;
     skipRef.current = 0;
     seenIdsRef.current = new Set();
     setProducts([]);
     setHasMore(true);
     setError(null);
-    fetchPage(query, 0, true);
+    fetchPage(query, category, 0, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query]);
+  }, [query, category]);
 
-  const fetchPage = useCallback(async (searchQuery, skip, replace = false) => {
+  const fetchPage = useCallback(async (searchQuery, searchCategory, skip, replace = false) => {
     setLoading(true);
     setError(null);
     try {
       let result;
       if (searchQuery && searchQuery.trim()) {
-        result = await searchAllSources(searchQuery.trim(), { limit: PAGE_SIZE, skip, location });
+        result = await searchAllSources(searchQuery.trim(), { limit: PAGE_SIZE, skip, location, category: searchCategory });
       } else {
-        result = await browseAllSources({ limit: PAGE_SIZE, skip, location });
+        result = await browseAllSources({ limit: PAGE_SIZE, skip, location, category: searchCategory });
       }
 
       // De-duplicate
@@ -53,7 +55,7 @@ export function useProducts(query, location) {
 
   const loadMore = useCallback(() => {
     if (!loading && hasMore) {
-      fetchPage(queryRef.current, skipRef.current);
+      fetchPage(queryRef.current, categoryRef.current, skipRef.current);
     }
   }, [loading, hasMore, fetchPage]);
 
@@ -61,7 +63,7 @@ export function useProducts(query, location) {
     skipRef.current = 0;
     seenIdsRef.current = new Set();
     setHasMore(true);
-    fetchPage(queryRef.current, 0, true);
+    fetchPage(queryRef.current, categoryRef.current, 0, true);
   }, [fetchPage]);
 
   return { products, loading, error, hasMore, loadMore, refresh };
