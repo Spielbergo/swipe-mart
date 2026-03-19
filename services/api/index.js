@@ -1,24 +1,38 @@
 /**
  * Unified product API layer.
  *
- * All platform adapters (DummyJSON, eBay, Etsy, Best Buy, etc.) should export
- * functions matching the same signature so they can be easily swapped or
- * combined here.
+ * Sources auto-enable based on environment variables:
+ *  - DummyJSON  — always active (no key needed, development fallback)
+ *  - eBay       — enabled when EXPO_PUBLIC_EBAY_ENABLED=true
+ *                 (set EBAY_CLIENT_ID + EBAY_CLIENT_SECRET in Netlify dashboard)
+ *  - Etsy       — enabled when EXPO_PUBLIC_ETSY_API_KEY is set
  *
- * Current free sources:
- *  - DummyJSON  (no key)  – great for development
- *
- * How to add a new source:
- *  1. Create services/api/myNewApi.js that exports searchProducts(), browseProducts()
- *  2. Import it here and add it to the SOURCES array.
- *  3. The aggregator below will fan the query out to every source and merge results.
+ * To add another source:
+ *  1. Create services/api/myNewApi.js exporting searchProducts() + browseProducts()
+ *  2. Import it below and add to the buildSources() array with an env-var guard.
  */
 
 import * as dummyJson from './dummyJsonApi';
-// import * as etsyApi   from './etsyApi';    // add when you have an API key
-// import * as ebayApi   from './ebayApi';
+import * as ebayApi from './ebayApi';
+import * as etsyApi from './etsyApi';
 
-const SOURCES = [dummyJson];
+const EBAY_ENABLED = process.env.EXPO_PUBLIC_EBAY_ENABLED === 'true';
+const ETSY_ENABLED = Boolean(process.env.EXPO_PUBLIC_ETSY_API_KEY);
+
+function buildSources() {
+  const sources = [dummyJson];
+  if (EBAY_ENABLED) {
+    sources.push(ebayApi);
+    console.log('[API] eBay source enabled');
+  }
+  if (ETSY_ENABLED) {
+    sources.push(etsyApi);
+    console.log('[API] Etsy source enabled');
+  }
+  return sources;
+}
+
+const SOURCES = buildSources();
 
 /**
  * Search across all configured sources.

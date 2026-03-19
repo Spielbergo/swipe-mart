@@ -1,10 +1,15 @@
 [build]
   command   = "npm run build:web"
   publish   = "dist"
+  functions = "netlify/functions"
 
 # Ensure environment variables are available at build time.
 # Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY
 # in: Netlify → Site → Site configuration → Environment variables
+#
+# For eBay, also add (server-side only — DO NOT prefix with EXPO_PUBLIC_):
+#   EBAY_CLIENT_ID     — Production App ID from developer.ebay.com
+#   EBAY_CLIENT_SECRET — Production Cert ID from developer.ebay.com
 
 [build.environment]
   NODE_VERSION = "20"
