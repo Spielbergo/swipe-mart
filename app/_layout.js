@@ -1,10 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StyleSheet, View, ActivityIndicator } from 'react-native';
 import { AppProvider, useApp } from '../context/AppContext';
+import LoginSplash from '../components/LoginSplash';
 
 // Auth guard – redirect unauthenticated users to /auth
 function AuthGuard() {
@@ -28,7 +29,19 @@ function AuthGuard() {
 // Holds the Stack behind a loading screen until auth state is known.
 // Prevents the white-screen flash on reload.
 function AppShell() {
-  const { loadingAuth } = useApp();
+  const { user, loadingAuth } = useApp();
+  const [showSplash, setShowSplash] = useState(false);
+  const prevUserRef = useRef(undefined);
+
+  useEffect(() => {
+    if (loadingAuth) return;
+    // First resolution after load: if user was previously null/undefined and now is set,
+    // this is a fresh login — show the splash.
+    if (prevUserRef.current === null && user) {
+      setShowSplash(true);
+    }
+    prevUserRef.current = user ?? null;
+  }, [user, loadingAuth]);
 
   if (loadingAuth) {
     return (
@@ -46,6 +59,9 @@ function AppShell() {
         <Stack.Screen name="auth" />
         <Stack.Screen name="(tabs)" />
       </Stack>
+      {showSplash && (
+        <LoginSplash onDone={() => setShowSplash(false)} />
+      )}
     </>
   );
 }
