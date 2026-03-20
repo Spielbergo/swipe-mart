@@ -15,6 +15,7 @@ export function AppProvider({ children }) {
 
   const [location, setLocation] = useState(null);
   const [locationError, setLocationError] = useState(null);
+  const [locationCity, setLocationCity] = useState(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -96,10 +97,19 @@ export function AppProvider({ children }) {
         return;
       }
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      setLocation({
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude,
-      });
+      const { latitude, longitude } = loc.coords;
+      setLocation({ latitude, longitude });
+
+      // Reverse geocode to get city name
+      try {
+        const [place] = await Location.reverseGeocodeAsync({ latitude, longitude });
+        if (place) {
+          const city = place.city || place.subregion || place.region || null;
+          setLocationCity(city);
+        }
+      } catch {
+        // Non-fatal — city name is display-only
+      }
     } catch (err) {
       setLocationError('Could not retrieve location.');
       console.warn('[Location]', err.message);
@@ -115,6 +125,7 @@ export function AppProvider({ children }) {
     // Location
     location,
     locationError,
+    locationCity,
     requestLocation,
 
     // Search

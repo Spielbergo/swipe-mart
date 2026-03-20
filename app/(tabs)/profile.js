@@ -15,7 +15,7 @@ import { signOut } from '../../services/supabase';
 import Colors from '../../constants/colors';
 
 export default function ProfileScreen() {
-  const { user, location, requestLocation, locationError, watchlist, showActionButtons, saveShowActionButtons } = useApp();
+  const { user, location, requestLocation, locationError, locationCity, watchlist, showActionButtons, saveShowActionButtons } = useApp();
   const [signingOut, setSigningOut] = useState(false);
   const [locationEnabled, setLocationEnabled] = useState(!!location);
 
@@ -72,7 +72,7 @@ export default function ProfileScreen() {
               <Text style={styles.settingLabel}>Location-based results</Text>
               <Text style={styles.settingHint}>
                 {location
-                  ? `📍 ${location.latitude.toFixed(3)}, ${location.longitude.toFixed(3)}`
+                  ? locationCity ? `📍 ${locationCity}` : `📍 ${location.latitude.toFixed(3)}, ${location.longitude.toFixed(3)}`
                   : locationError ?? 'Tap to enable'}
               </Text>
             </View>
