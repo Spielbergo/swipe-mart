@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Switch,
-  Alert,
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
@@ -17,21 +16,18 @@ import Colors from '../../constants/colors';
 export default function ProfileScreen() {
   const { user, location, requestLocation, locationError, locationCity, watchlist, showActionButtons, saveShowActionButtons } = useApp();
   const [signingOut, setSigningOut] = useState(false);
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [locationEnabled, setLocationEnabled] = useState(!!location);
 
-  const handleSignOut = () => {
-    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign Out',
-        style: 'destructive',
-        onPress: async () => {
-          setSigningOut(true);
-          await signOut();
-          setSigningOut(false);
-        },
-      },
-    ]);
+  const handleSignOut = async () => {
+    if (!confirmSignOut) {
+      setConfirmSignOut(true);
+      return;
+    }
+    setSigningOut(true);
+    await signOut();
+    setSigningOut(false);
+    setConfirmSignOut(false);
   };
 
   const handleLocationToggle = async (val) => {
@@ -117,15 +113,35 @@ export default function ProfileScreen() {
         </View>
 
         {/* Sign out */}
-        <TouchableOpacity
-          style={[styles.signOutBtn, signingOut && { opacity: 0.6 }]}
-          onPress={handleSignOut}
-          disabled={signingOut}
-        >
-          {signingOut
-            ? <ActivityIndicator color={Colors.nope} />
-            : <Text style={styles.signOutText}>Sign Out</Text>}
-        </TouchableOpacity>
+        {confirmSignOut ? (
+          <View style={styles.confirmRow}>
+            <Text style={styles.confirmText}>Are you sure?</Text>
+            <View style={styles.confirmBtns}>
+              <TouchableOpacity
+                style={styles.confirmCancel}
+                onPress={() => setConfirmSignOut(false)}
+              >
+                <Text style={styles.confirmCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.signOutBtn, styles.confirmYes, signingOut && { opacity: 0.6 }]}
+                onPress={handleSignOut}
+                disabled={signingOut}
+              >
+                {signingOut
+                  ? <ActivityIndicator color={Colors.nope} />
+                  : <Text style={styles.signOutText}>Yes, Sign Out</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.signOutBtn}
+            onPress={handleSignOut}
+          >
+            <Text style={styles.signOutText}>Sign Out</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -267,5 +283,42 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: Colors.nope,
+  },
+  confirmRow: {
+    backgroundColor: Colors.card,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: Colors.nope,
+    padding: 16,
+    gap: 12,
+    marginTop: 8,
+  },
+  confirmText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    textAlign: 'center',
+  },
+  confirmBtns: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  confirmCancel: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: 10,
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  confirmCancelText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  confirmYes: {
+    flex: 1,
+    marginTop: 0,
   },
 });
